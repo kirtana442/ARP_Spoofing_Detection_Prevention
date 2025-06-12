@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+
+import scapy.all as scapy
+import netifaces
+import time
+import os
+import sys
+from scapy.all import sniff, ARP
+
+class ArpSafe:
+    def __init__(self):
+        self.interface = self.get_active_interface()
+        self.gateway_ip = self.get_router_ip()
+        self.gateway_mac = self.get_mac(self.gateway_ip)
+        self.attacker_ip = None
+        self.attacker_mac = None
+
+    def get_active_interface(self):
+        gateways = netifaces.gateways()
+        default_gateway = gateways.get('default', {})
+        if netifaces.AF_INET in default_gateway:
+            return default_gateway[netifaces.AF_INET][1]
+        return None
+
+    def get_router_ip(self):
+        gateways = netifaces.gateways()
+        default_gateway = gateways.get('default', {})
+        if netifaces.AF_INET in default_gateway:
+            return default_gateway[netifaces.AF_INET][0]
+        return None
+
+    def get_mac(self, ip):
+        request = scapy.ARP(pdst=ip)
+        broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+        packet = broadcast / request
+        ans, _ = scapy.srp(packet, iface=self.interface, timeout=2, verbose=False)
+        if ans:
+            return ans[0][1].hwsrc
+        return None
+
+    def set_static_entry(self):
+        os.system(f"sudo arp -s {self.gateway_ip} {self.gateway_mac}")
+        print("Static ARP entry for router is set.")
+
+    def show_dropped_pkts(self,attacker_mac):
+        os.system(f"sudo tcpdump -i {self.interface} -n ether host {attacker_mac} and arp[6:2] = 2")
+
+    def show_dropped_pkt_count(self):
+        os.system(f"sudo arptables -L -v -n --line-numbers")
+
+    def block_attacker_by_mac(self, mac):
+        os.system(f"sudo arptables -A INPUT --src-mac {mac} -j DROP")
+        print(f"Blocked attacker MAC: {mac}")
+
+    def handle_arp_packet(self, pkt):
+        """ Checks ARP packets for spoofed data """
+        if pkt.haslayer(ARP) and pkt[ARP].op == 2:  # ARP Reply (is-at)
+            ip_ = pkt[ARP].psrc
+            mac_ = pkt[ARP].hwsrc
+
+            if self.gateway_mac and mac_ != self.gateway_mac:
+                print(f"ARP Spoofing detected! Attacker IP: {ip_}, MAC: {mac_}")
+                self.attacker_ip = ip_
+                self.attacker_mac = mac_
+                self.block_attacker_by_mac(mac_)
+                try:
+                        self.show_dropped_pkts(mac_)
+                except KeyboardInterrupt:
+                        print("program end")
+                self.show_dropped_pkt_count()
+                sys.exit()
+
+    def protect_network(self):
+        """ Continuously monitors ARP traffic for spoofing attacks """
+        print("ARP Protection Active! Monitoring for attacks...")
+        print("Setting static ARP entry for router...")
+        self.set_static_entry()
+
+        sniff(filter="arp", prn=self.handle_arp_packet, store=False, iface=self.interface)
+
+
+if __name__ == "__main__":
+    arp_protector = ArpSafe()
