@@ -53,6 +53,7 @@ class ArpSafe:
         self.attacker_ip = None
         self.attacker_mac = None
         self.sniffer = None
+        self.blocked_macs = set()
 
     def get_active_interface(self):
         gateways = netifaces.gateways()
@@ -86,9 +87,16 @@ class ArpSafe:
         os.system(f"sudo arptables -L -v -n --line-numbers")
 
     def block_attacker_by_mac(self, mac):
+        if mac in self.blocked_macs:
+            print_stmt.put(f"MAC {mac} already blocked, skipping.")
+            log_stmt.put(f"MAC {mac} already in blocked_macs list.")
+            return
+
         os.system(f"sudo arptables -A INPUT --src-mac {mac} -j DROP")
+    
         print_stmt.put(f"Blocked attacker MAC: {mac}")
         log_stmt.put(f"Blocked attacker MAC: {mac}")
+        self.blocked_macs.add(mac)
 
     def handle_arp_packet(self, pkt):
         if pkt.haslayer(ARP) and pkt[ARP].op == 2:
