@@ -1,6 +1,6 @@
 # 🔐 ARP Spoofer & arpSafe
 
-**ARP Spoofer** is an advanced tool for conducting ARP poisoning (MITM/disassociation) attacks on a local network, while **arpSafe** is its defensive counterpart, providing live detection and prevention against such threats.
+**ARP Spoofer** is a tool for conducting ARP poisoning (MITM/disassociation) attacks on a local network, while **arpSafe** is its defensive counterpart, providing live detection and prevention against such threats.
 
 ---
 
@@ -44,30 +44,31 @@ This dual-toolset project demonstrates:
 | arptables Integration | 🚫 | ✅ |
 | Graceful Exit Handling | ✅ | ✅ |
 
----
-
-## 🎥 Demo
-
-> Coming soon: video demo of attack + defense in action
 
 ---
 
 ## 🧪 Installation
 
 ```bash
-git clone https://github.com/yourusername/arp-spoofer-arp-safe.git
-cd arp-spoofer-arp-safe
-pip install -r requirements.txt
+git clone https://github.com/kirtana442/ARP_Spoofing_Detection_Prevention
+
+```
+
 Install system dependencies:
 
-bash
-
+```bash
 sudo apt install arptables
-🚀 Usage
-🔴 arpSpoofer: Active ARP Poisoning Tool
-bash
+```
 
+---
+
+## 🚀 Usage
+🔴 arpSpoofer: Active ARP Poisoning Tool
+
+```bash
 sudo python3 arp_spoofer.py -t <target_ip> [-s <gateway_ip>] [-i <interface>] [-ti <time_interval>] [-ipf] [-d]
+```
+
 Options:
 
 -t, --target: Target IP (Required)
@@ -84,10 +85,13 @@ Options:
 
 📌 Logs saved in arp_spoofer_log.txt
 
-🛡️ arpSafe: Real-time Detection and Defense Tool
-bash
+---
 
+## 🛡️ arpSafe: Real-time Detection and Defense Tool
+
+```bash
 sudo python3 arpSafe.py
+```
 What it does:
 
 Monitors ARP traffic for spoofed packets
@@ -100,13 +104,17 @@ Logs all activity to arp_safe_log.txt
 
 ⛑️ Automatically restores system ARP and arptables state on exit (CTRL+C)
 
-📦 Dependencies
+
+## 📦 Dependencies
 Install via pip:
 
-bash
-
+```bash
 pip install scapy netifaces colorama
-System requirements:
+```
+
+---
+
+## System requirements:
 
 Linux OS
 
@@ -114,11 +122,10 @@ arptables installed
 
 Root privileges
 
-⚠️ Security & Ethical Use
+---
+
+## ⚠️ Security & Ethical Use
 This project is strictly for educational 
 
 Never use ARP spoofing tools on networks you don’t own or have explicit permission to test. Misuse can lead to legal consequences.
 
-Maintainer
-Kirtana S
-GitHub: kirtana442
