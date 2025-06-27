@@ -127,5 +127,5 @@ Root privileges
 ## ⚠️ Security & Ethical Use
 This project is strictly for educational 
 
-Never use ARP spoofing tools on networks you don’t own or have explicit permission to test. Misuse can lead to legal consequences.
+Never use ARP spoofing tools on networks you don’t own or have explicit permission to test. 
 
